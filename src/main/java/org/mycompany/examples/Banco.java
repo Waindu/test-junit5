@@ -34,4 +34,9 @@ public class Banco {
         cuenta.setBanco(this);
     }
 
+    public void transferir(Cuenta origen, Cuenta destino, BigDecimal monto) {
+        origen.debito(monto);
+        destino.credito(monto);
+    }
+
 }

@@ -1,5 +1,7 @@
 package org.mycompany.examples;
 
+import org.mycompany.exeptions.DineroInsuficienteException;
+
 import java.math.BigDecimal;
 
 public class Cuenta {
@@ -14,9 +16,9 @@ public class Cuenta {
 
     public void debito(BigDecimal monto) {
         BigDecimal nuevoSaldo = this.saldo.subtract(monto);
-        //if (nuevoSaldo.compareTo(BigDecimal.ZERO) < 0){
-        //    throw new DineroInsuficienteException("Dinero Insuficiente");
-        //}
+        if (nuevoSaldo.compareTo(BigDecimal.ZERO) < 0){
+            throw new DineroInsuficienteException("Dinero Insuficiente");
+        }
         this.saldo = nuevoSaldo;
     }
 
