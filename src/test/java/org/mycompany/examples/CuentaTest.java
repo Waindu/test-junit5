@@ -2,16 +2,26 @@ package org.mycompany.examples;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mycompany.exeptions.DineroInsuficienteException;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 
 public class CuentaTest {
     Cuenta cuenta;
+    String DEV = "dev";
+
+    private TestInfo testInfo;
+    private TestReporter testReporter;
 
     @BeforeAll // Una vez al principio
     static void beforeAll() {
@@ -24,9 +34,14 @@ public class CuentaTest {
     }
 
     @BeforeEach // antes de cada test
-    void initMetodoTest() {
+    void initMetodoTest(TestInfo testInfo, TestReporter testReporter) {
         this.cuenta = new Cuenta("Fede", new BigDecimal("1000.0001"));
-        System.out.println("Iniciando método de test (BeforeEach Super)");
+        this.testInfo = testInfo;
+        this.testReporter = testReporter;
+//        System.out.println("ejecutando: " + testInfo.getDisplayName() + " " + testInfo.getTestMethod().get().getName()
+//                + " con las etiquetas " + testInfo.getTags());
+        testReporter.publishEntry("ejecutando: " + testInfo.getDisplayName() + " " + testInfo.getTestMethod().get().getName()
+                + " con las etiquetas " + testInfo.getTags());
     }
 
     @AfterEach // despues de cada test
@@ -231,5 +246,74 @@ public class CuentaTest {
         void testVariableEntornoConEnvironmentVariableJDK15() {
         }
     }
+
+    @Nested
+    @DisplayName("ASSUMPTION TEST")
+    class AssumptionsTest {
+
+        @Tag("assumption")
+        @Test
+        @DisplayName("TEST ASSUMPTIONS CON ASSUME TRUE")
+        void testNombreCuentaConAssumption() {
+            String esperado = "Fede";
+            String real = cuenta.getPersona();
+            boolean isDev = DEV.equals(System.getProperty("ENV"));
+            Assumptions.assumeTrue(isDev);
+            Assertions.assertEquals(esperado, real);
+            Assertions.assertTrue(esperado.equals(real));
+        }
+        @Tag("assumption")
+        @Test
+        @DisplayName("TEST ASSUMPTIONS CON ASSUMING THAT")
+        void testNombreCuentaConAssumptions() {
+            String esperado = "Fede";
+            String real = cuenta.getPersona();
+            boolean isDev = DEV.equals(System.getProperty("ENV"));
+
+            assumingThat(isDev, () -> Assertions.assertTrue(esperado.equals(real), () -> "Fallo Assumption"));
+
+            Assertions.assertEquals(esperado, real, () -> "Fallo Assert");
+        }
+    }
+
+    @Nested
+    @DisplayName("Timeout Test")
+    @Tag("timeout")
+    class TimeoutTest {
+        @Test
+        @Timeout(value = 2000, unit = TimeUnit.MILLISECONDS)
+        void timeoutTest() throws InterruptedException {
+            TimeUnit.MILLISECONDS.sleep(1500);
+        }
+
+        @Test
+        void assertTimeoutTest() {
+            // No se verá afectado por el assertTimeout
+
+            Assertions.assertTimeout(
+                    Duration.ofSeconds(2), () -> TimeUnit.SECONDS.sleep(1)
+            );
+        }
+    }
+    @Tag("repe")
+    @RepeatedTest(value=5, name="{displayName} - Repetición nº: {currentRepetition} de {totalRepetitions} ")
+    @DisplayName("test Saldo Cuenta Repetido")
+    void testSaldoCuentaRepetido() {
+        Assertions.assertEquals(1000.0001, cuenta.getSaldo().doubleValue());
+        Assertions.assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
+    }
+
+    @Tag("param")
+    @ParameterizedTest
+    @CsvSource({"100, 1100.0001 ", "200, 1200.0001", "300, 1300.0001", "400, 1400.0001", "1000, 2000.0001"})
+    @DisplayName("Test Credito Cuenta Parametrizado THIS!")
+    void testCreditoCuentaParametrizado(String monto, String expected) {
+        cuenta.credito(new BigDecimal(monto));
+        assertNotNull(cuenta.getSaldo());
+        assertEquals(expected, cuenta.getSaldo().toPlainString());
+        assertEquals(expected, cuenta.getSaldo().toPlainString());
+    }
+
+
 
 }
