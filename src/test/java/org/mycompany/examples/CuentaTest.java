@@ -3,6 +3,7 @@ package org.mycompany.examples;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mycompany.exeptions.DineroInsuficienteException;
@@ -45,8 +46,10 @@ public class CuentaTest {
     }
 
     @AfterEach // despues de cada test
-    void tearDown() {
-        System.out.println("Finalizado método de test (AfterEach Super)");
+    void tearDown(TestInfo testInfo, TestReporter testReporter) {
+        this.testInfo = testInfo;
+        this.testReporter = testReporter;
+        System.out.println("Finalizado método de test "+ testInfo.getDisplayName() + "(AfterEach Super)");
     }
 
     @Nested
@@ -194,15 +197,14 @@ public class CuentaTest {
         }
     }
 
-    @Test
-    void imprimirSystemProperties() {
-        Properties p = System.getProperties();
-        p.forEach((k, v) -> System.out.println(String.format("%s: %s", k, v)));
-    }
-
     @Nested
     @DisplayName("Test según System Properties")
     class SystemPropTest {
+        @Test
+        void imprimirSystemProperties() {
+            Properties p = System.getProperties();
+            p.forEach((k, v) -> System.out.println(String.format("%s: %s", k, v)));
+        }
 
         @Test
         @EnabledIfSystemProperty(named = "user.name", matches = "Fede")
@@ -303,17 +305,31 @@ public class CuentaTest {
         Assertions.assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
     }
 
+
+    @Tag("param")
+    @ParameterizedTest
+    @ValueSource(strings = {"100", "200", "300", "400", "500", "600"})
+    @DisplayName("Test Debito Cuenta Parametrizado")
+    void testDebitoCuentaParametrizado(String monto) {
+        // cuenta Fede, 1000.0001
+
+        cuenta.debito(new BigDecimal(monto));
+
+        assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+    }
+
     @Tag("param")
     @ParameterizedTest
     @CsvSource({"100, 1100.0001 ", "200, 1200.0001", "300, 1300.0001", "400, 1400.0001", "1000, 2000.0001"})
-    @DisplayName("Test Credito Cuenta Parametrizado THIS!")
+    @DisplayName("Test Credito Cuenta Parametrizado")
     void testCreditoCuentaParametrizado(String monto, String expected) {
+        // cuenta Fede, 1000.0001
+
         cuenta.credito(new BigDecimal(monto));
+
         assertNotNull(cuenta.getSaldo());
         assertEquals(expected, cuenta.getSaldo().toPlainString());
-        assertEquals(expected, cuenta.getSaldo().toPlainString());
     }
-
 
 
 }
